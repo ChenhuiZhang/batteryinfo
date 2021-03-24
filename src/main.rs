@@ -1,11 +1,10 @@
-use std::{convert::TryInto, fs};
-
 use std::fmt;
+use std::fs;
+use std::error::Error;
 
-static BASE_PATH: &str = "/home/chenhuiz/work/rust/gauge/";
-
-enum GError {
-    NoSuppot,
+#[derive(Debug)]
+struct GError {
+    details: String
 }
 #[derive(Debug)]
 enum GaugeChip {
@@ -22,9 +21,34 @@ struct Gauge {
     current: i32,
 }
 
+impl GError {
+    fn new(msg: &str) -> Self {
+        GError{details: msg.to_string()}
+    }
+}
+
 impl fmt::Display for GError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "An Error Occurred, Please Try Again!") // user-facing output
+        write!(fmt, "libbattery: {}", self.details)
+    }
+}
+
+impl Error for GError {
+    fn description(&self) -> &str {
+        &self.details
+    }
+}
+
+impl From<std::num::ParseIntError> for GError {
+    fn from(e: std::num::ParseIntError) -> Self {
+        //println!("{}", e);
+        GError::new(&e.to_string())
+    }
+}
+
+impl From<std::io::Error> for GError {
+    fn from(e: std::io::Error) -> Self {
+        GError::new(&e.to_string())
     }
 }
 
@@ -52,20 +76,36 @@ impl Default for Gauge {
 
 impl Gauge {
     fn get_capacity(&self) -> Result<u32, GError> {
-        OK(read_property(format!("{}{}", self.chip.path(), "/capacity").as_str()).try_into().unwrap())
+        read_u32_property(format!("{}{}", self.chip.path(), "/capacity").as_str())
+    }
+
+    fn get_current(&self) -> Result<i32, GError> {
+        read_i32_property(format!("{}{}", self.chip.path(), "/current_now").as_str())
+    }
+
+    fn get_cycle_count(&self) -> Result<u32, GError> {
+        match self.chip {
+            GaugeChip::BQ27z561(_) => {
+                read_u32_property(format!("{}{}", self.chip.path(), "/cycle_count").as_str())
+            },
+            _ => Err(GError::new("Not supported")),
+        }
     }
 }
-fn read_property(path: &str) -> i32 {
+
+fn read_i32_property(path: &str) -> Result<i32, GError> {
 
     println!("Read path {}", path);
 
-    let value = fs::read_to_string(path)
-        .expect("Read property failed")
-        .trim_end_matches('\n')
-        .parse::<i32>()
-        .unwrap();
+    let value= fs::read_to_string(path)?.trim_end_matches('\n').parse::<i32>()?;
 
-    return value;
+    Ok(value)
+}
+
+fn read_u32_property(path: &str) -> Result<u32, GError> {
+    let value= fs::read_to_string(path)?.trim_end_matches('\n').parse::<u32>()?;
+
+    Ok(value)
 }
 
 fn main() {
@@ -78,8 +118,8 @@ fn main() {
 
     println!("With text:{}", capacity.trim_end_matches('\n').parse::<u32>().unwrap());
 
-    let voltage = read_property(format!("{}{}", gauge_path, "voltage_now").as_str());
-    println!("Voltage: {}", voltage);
+    let voltage = read_u32_property(format!("{}{}", gauge_path, "voltage_now").as_str());
+    println!("Voltage: {}", voltage.unwrap());
 
     let g = Gauge {
         chip: GaugeChip::BQ27z561(String::from("bq27z561")),
@@ -88,5 +128,11 @@ fn main() {
 
     println!("{:?}", g);
 
-    println!("{}", g.get_capacity());
+    println!("{}", g.get_capacity().unwrap());
+    //println!("{}", g.get_current().unwrap());
+    println!("{}", g.get_cycle_count().unwrap());
+    match g.get_current() {
+        Ok(v) => println!("{}", v),
+        Err(e) => println!("{}", e),
+    };
 }
