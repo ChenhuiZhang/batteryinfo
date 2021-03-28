@@ -1,10 +1,11 @@
 use std::fmt;
 use std::fs;
-use std::error::Error;
 
 #[derive(Debug)]
-struct GError {
-    details: String
+enum GError {
+    IOErr(std::io::Error),
+    ParseErr(std::num::ParseIntError),
+    NotSupport,
 }
 #[derive(Debug)]
 enum GaugeChip {
@@ -21,34 +22,31 @@ struct Gauge {
     current: i32,
 }
 
-impl GError {
-    fn new(msg: &str) -> Self {
-        GError{details: msg.to_string()}
-    }
-}
-
 impl fmt::Display for GError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "libbattery: {}", self.details)
-    }
-}
-
-impl Error for GError {
-    fn description(&self) -> &str {
-        &self.details
+        match self {
+            GError::NotSupport => {
+                write!(fmt, "batteryinfo: Not support")
+            }
+            GError::IOErr(e) => {
+                write!(fmt, "batteryinfo: {}", e)
+            }
+            GError::ParseErr(e) => {
+                write!(fmt, "batteryinfo: {}", e)
+            }
+        }
     }
 }
 
 impl From<std::num::ParseIntError> for GError {
     fn from(e: std::num::ParseIntError) -> Self {
-        //println!("{}", e);
-        GError::new(&e.to_string())
+        GError::ParseErr(e)
     }
 }
 
 impl From<std::io::Error> for GError {
     fn from(e: std::io::Error) -> Self {
-        GError::new(&e.to_string())
+        GError::IOErr(e)
     }
 }
 
@@ -88,7 +86,7 @@ impl Gauge {
             GaugeChip::BQ27z561(_) => {
                 read_u32_property(format!("{}{}", self.chip.path(), "/cycle_count").as_str())
             },
-            _ => Err(GError::new("Not supported")),
+            _ => Err(GError::NotSupport)
         }
     }
 }
@@ -135,4 +133,8 @@ fn main() {
         Ok(v) => println!("{}", v),
         Err(e) => println!("{}", e),
     };
+
+    if let Err(e) = g.get_current() {
+        println!("{}", e);
+    }
 }
