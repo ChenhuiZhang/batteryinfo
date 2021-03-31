@@ -55,8 +55,8 @@ impl From<std::io::Error> for GError {
 impl GaugeChip {
     fn path(&self) -> &str {
         match self {
-            GaugeChip::BQ27621(_) => { "bq27621" },
-            GaugeChip::BQ27z561(_) => { "bq27z561" },
+            GaugeChip::BQ27621(_) => "bq27621",
+            GaugeChip::BQ27z561(_) => "bq27z561",
         }
     }
 }
@@ -87,23 +87,26 @@ impl Gauge {
         match self.chip {
             GaugeChip::BQ27z561(_) => {
                 read_u32_property(format!("{}{}", self.chip.path(), "/cycle_count").as_str())
-            },
-            _ => Err(GError::NotSupport)
+            }
+            _ => Err(GError::NotSupport),
         }
     }
 }
 
 fn read_i32_property(path: &str) -> GaugeResult<i32> {
-
     println!("Read path {}", path);
 
-    let value= fs::read_to_string(path)?.trim_end_matches('\n').parse::<i32>()?;
+    let value = fs::read_to_string(path)?
+        .trim_end_matches('\n')
+        .parse::<i32>()?;
 
     Ok(value)
 }
 
 fn read_u32_property(path: &str) -> GaugeResult<u32> {
-    let value= fs::read_to_string(path)?.trim_end_matches('\n').parse::<u32>()?;
+    let value = fs::read_to_string(path)?
+        .trim_end_matches('\n')
+        .parse::<u32>()?;
 
     Ok(value)
 }
@@ -116,7 +119,10 @@ fn main() {
     let capacity = fs::read_to_string(format!("{}{}", gauge_path, "capacity"))
         .expect("Something went wrong reading the file");
 
-    println!("With text:{}", capacity.trim_end_matches('\n').parse::<u32>().unwrap());
+    println!(
+        "With text:{}",
+        capacity.trim_end_matches('\n').parse::<u32>().unwrap()
+    );
 
     let voltage = read_u32_property(format!("{}{}", gauge_path, "voltage_now").as_str());
     println!("Voltage: {}", voltage.unwrap());
