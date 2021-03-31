@@ -1,6 +1,8 @@
 use std::fmt;
 use std::fs;
 
+type GaugeResult<T> = Result<T, GError>;
+
 #[derive(Debug)]
 enum GError {
     IOErr(std::io::Error),
@@ -73,15 +75,15 @@ impl Default for Gauge {
 }
 
 impl Gauge {
-    fn get_capacity(&self) -> Result<u32, GError> {
+    fn get_capacity(&self) -> GaugeResult<u32> {
         read_u32_property(format!("{}{}", self.chip.path(), "/capacity").as_str())
     }
 
-    fn get_current(&self) -> Result<i32, GError> {
+    fn get_current(&self) -> GaugeResult<i32> {
         read_i32_property(format!("{}{}", self.chip.path(), "/current_now").as_str())
     }
 
-    fn get_cycle_count(&self) -> Result<u32, GError> {
+    fn get_cycle_count(&self) -> GaugeResult<u32> {
         match self.chip {
             GaugeChip::BQ27z561(_) => {
                 read_u32_property(format!("{}{}", self.chip.path(), "/cycle_count").as_str())
@@ -91,7 +93,7 @@ impl Gauge {
     }
 }
 
-fn read_i32_property(path: &str) -> Result<i32, GError> {
+fn read_i32_property(path: &str) -> GaugeResult<i32> {
 
     println!("Read path {}", path);
 
@@ -100,7 +102,7 @@ fn read_i32_property(path: &str) -> Result<i32, GError> {
     Ok(value)
 }
 
-fn read_u32_property(path: &str) -> Result<u32, GError> {
+fn read_u32_property(path: &str) -> GaugeResult<u32> {
     let value= fs::read_to_string(path)?.trim_end_matches('\n').parse::<u32>()?;
 
     Ok(value)
