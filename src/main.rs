@@ -4,8 +4,8 @@ use std::fs;
 
 #[derive(Debug)]
 enum GaugeChip {
-    BQ27621(String),
-    BQ27z561(String),
+    BQ27621,
+    BQ27z561,
 }
 #[derive(Debug)]
 struct Gauge {
@@ -20,8 +20,8 @@ struct Gauge {
 impl fmt::Display for GaugeChip {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::BQ27621(_) => write!(f, "BQ27621"),
-            Self::BQ27z561(_) => write!(f, "BQ27z561"),
+            Self::BQ27621 => write!(f, "BQ27621"),
+            Self::BQ27z561 => write!(f, "BQ27z561"),
         }
     }
 }
@@ -29,8 +29,8 @@ impl fmt::Display for GaugeChip {
 impl GaugeChip {
     fn path(&self) -> &str {
         match self {
-            GaugeChip::BQ27621(_) => "bq27621",
-            GaugeChip::BQ27z561(_) => "bq27z561",
+            GaugeChip::BQ27621 => "bq27621",
+            GaugeChip::BQ27z561 => "bq27z561",
         }
     }
 }
@@ -38,7 +38,7 @@ impl GaugeChip {
 impl Default for Gauge {
     fn default() -> Self {
         Gauge {
-            chip: GaugeChip::BQ27621(String::from("bq27621")),
+            chip: GaugeChip::BQ27621,
             capacity: 0,
             remaining_capacity: 0,
             full_capacity: 0,
@@ -71,7 +71,7 @@ impl Gauge {
 
     fn get_cycle_count(&self) -> Result<u32> {
         match self.chip {
-            GaugeChip::BQ27z561(_) => {
+            GaugeChip::BQ27z561 => {
                 read_u32_property(format!("{}{}", self.chip.path(), "/cycle_count").as_str())
             }
             _ => Err(anyhow!("Not support 'get_cycle_count' for {}", self.chip)),
@@ -80,7 +80,7 @@ impl Gauge {
 
     fn get_time_to_full(&self) -> Result<u32> {
         match self.chip {
-            GaugeChip::BQ27z561(_) => {
+            GaugeChip::BQ27z561 => {
                 read_u32_property(format!("{}{}", self.chip.path(), "/time_to_full_now").as_str())
             }
             _ => Err(anyhow!("Not support 'get_time_to_full' for {}", self.chip)),
@@ -89,7 +89,7 @@ impl Gauge {
 
     fn get_time_to_empty(&self) -> Result<u32> {
         match self.chip {
-            GaugeChip::BQ27z561(_) => {
+            GaugeChip::BQ27z561 => {
                 read_u32_property(format!("{}{}", self.chip.path(), "/time_to_empty_now").as_str())
             }
             _ => Err(anyhow!("Not support 'get_time_to_empty' for {}", self.chip)),
@@ -137,7 +137,7 @@ fn main() {
 
     let g = Gauge {
         //chip: GaugeChip::BQ27z561(String::from("bq27z561")),
-        chip: GaugeChip::BQ27z561(String::from("bq27z561")),
+        chip: GaugeChip::BQ27z561,
         ..Default::default()
     };
 
@@ -152,7 +152,7 @@ fn main() {
     };
 
     if let Err(e) = g.get_voltage() {
-        println!("{}", e);
+        println!("{:?}", e);
     }
 
     println!(
