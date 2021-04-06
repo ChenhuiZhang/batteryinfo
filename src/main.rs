@@ -1,14 +1,7 @@
+use anyhow::{anyhow, Context, Result};
 use std::fmt;
 use std::fs;
 
-type GaugeResult<T> = Result<T, GError>;
-
-#[derive(Debug)]
-enum GError {
-    IOErr(std::io::Error),
-    ParseErr(std::num::ParseIntError),
-    NotSupport,
-}
 #[derive(Debug)]
 enum GaugeChip {
     BQ27621(String),
@@ -24,31 +17,12 @@ struct Gauge {
     current: i32,
 }
 
-impl fmt::Display for GError {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+impl fmt::Display for GaugeChip {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            GError::NotSupport => {
-                write!(fmt, "batteryinfo: Not support")
-            }
-            GError::IOErr(e) => {
-                write!(fmt, "batteryinfo: {}", e)
-            }
-            GError::ParseErr(e) => {
-                write!(fmt, "batteryinfo: {}", e)
-            }
+            Self::BQ27621(_) => write!(f, "BQ27621"),
+            Self::BQ27z561(_) => write!(f, "BQ27z561"),
         }
-    }
-}
-
-impl From<std::num::ParseIntError> for GError {
-    fn from(e: std::num::ParseIntError) -> Self {
-        GError::ParseErr(e)
-    }
-}
-
-impl From<std::io::Error> for GError {
-    fn from(e: std::io::Error) -> Self {
-        GError::IOErr(e)
     }
 }
 
@@ -75,68 +49,72 @@ impl Default for Gauge {
 }
 
 impl Gauge {
-    fn get_capacity(&self) -> GaugeResult<u32> {
+    fn get_capacity(&self) -> Result<u32> {
         read_u32_property(format!("{}{}", self.chip.path(), "/capacity").as_str())
     }
 
-    fn get_voltage(&self) -> GaugeResult<u32> {
+    fn get_voltage(&self) -> Result<u32> {
         read_u32_property(format!("{}{}", self.chip.path(), "/voltage").as_str())
     }
 
-    fn get_current(&self) -> GaugeResult<i32> {
+    fn get_current(&self) -> Result<i32> {
         read_i32_property(format!("{}{}", self.chip.path(), "/current_now").as_str())
     }
 
-    fn get_full_charge_capacity(&self) -> GaugeResult<u32> {
+    fn get_full_charge_capacity(&self) -> Result<u32> {
         read_u32_property(format!("{}{}", self.chip.path(), "/charge_full").as_str())
     }
 
-    fn get_charge_now_capacity(&self) -> GaugeResult<u32> {
+    fn get_charge_now_capacity(&self) -> Result<u32> {
         read_u32_property(format!("{}{}", self.chip.path(), "/charge_now").as_str())
     }
 
-    fn get_cycle_count(&self) -> GaugeResult<u32> {
+    fn get_cycle_count(&self) -> Result<u32> {
         match self.chip {
             GaugeChip::BQ27z561(_) => {
                 read_u32_property(format!("{}{}", self.chip.path(), "/cycle_count").as_str())
             }
-            _ => Err(GError::NotSupport),
+            _ => Err(anyhow!("Not support 'get_cycle_count' for {}", self.chip)),
         }
     }
 
-    fn get_time_to_full(&self) -> GaugeResult<u32> {
+    fn get_time_to_full(&self) -> Result<u32> {
         match self.chip {
             GaugeChip::BQ27z561(_) => {
                 read_u32_property(format!("{}{}", self.chip.path(), "/time_to_full_now").as_str())
             }
-            _ => Err(GError::NotSupport),
+            _ => Err(anyhow!("Not support 'get_time_to_full' for {}", self.chip)),
         }
     }
 
-    fn get_time_to_empty(&self) -> GaugeResult<u32> {
+    fn get_time_to_empty(&self) -> Result<u32> {
         match self.chip {
             GaugeChip::BQ27z561(_) => {
                 read_u32_property(format!("{}{}", self.chip.path(), "/time_to_empty_now").as_str())
             }
-            _ => Err(GError::NotSupport),
+            _ => Err(anyhow!("Not support 'get_time_to_empty' for {}", self.chip)),
         }
     }
 }
 
-fn read_i32_property(path: &str) -> GaugeResult<i32> {
-    println!("Read path {}", path);
+fn read_i32_property(path: &str) -> Result<i32> {
+    let s = fs::read_to_string(path).context(format!("Failed to read {}", path))?;
 
-    let value = fs::read_to_string(path)?
+    let value = s
         .trim_end_matches('\n')
-        .parse::<i32>()?;
+        .parse::<i32>()
+        .context(format!("Failed to parse {} into i32", s))?;
 
     Ok(value)
 }
 
-fn read_u32_property(path: &str) -> GaugeResult<u32> {
-    let value = fs::read_to_string(path)?
+fn read_u32_property(path: &str) -> Result<u32> {
+    let s = fs::read_to_string(path).context(format!("Failed to read {}", path))?;
+
+    let value = s
         .trim_end_matches('\n')
-        .parse::<u32>()?;
+        .parse::<u32>()
+        .context(format!("Failed to parse {} into u32", s))?;
 
     Ok(value)
 }
@@ -158,6 +136,7 @@ fn main() {
     println!("Voltage: {}", voltage.unwrap());
 
     let g = Gauge {
+        //chip: GaugeChip::BQ27z561(String::from("bq27z561")),
         chip: GaugeChip::BQ27z561(String::from("bq27z561")),
         ..Default::default()
     };
@@ -166,7 +145,7 @@ fn main() {
 
     println!("{}", g.get_capacity().unwrap());
     //println!("{}", g.get_current().unwrap());
-    println!("{}", g.get_cycle_count().unwrap());
+    //println!("{}", g.get_cycle_count().unwrap());
     match g.get_current() {
         Ok(v) => println!("{}", v),
         Err(e) => println!("{}", e),
@@ -181,6 +160,10 @@ fn main() {
         g.get_charge_now_capacity().unwrap() / 1000,
         g.get_full_charge_capacity().unwrap() / 1000
     );
+
+    if let Err(e) = g.get_cycle_count() {
+        println!("{:?}", e)
+    }
 
     if g.get_current().unwrap() > 0 {
         println!("Time left: {}", g.get_time_to_empty().unwrap());
