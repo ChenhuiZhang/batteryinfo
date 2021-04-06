@@ -79,14 +79,44 @@ impl Gauge {
         read_u32_property(format!("{}{}", self.chip.path(), "/capacity").as_str())
     }
 
+    fn get_voltage(&self) -> GaugeResult<u32> {
+        read_u32_property(format!("{}{}", self.chip.path(), "/voltage").as_str())
+    }
+
     fn get_current(&self) -> GaugeResult<i32> {
         read_i32_property(format!("{}{}", self.chip.path(), "/current_now").as_str())
+    }
+
+    fn get_full_charge_capacity(&self) -> GaugeResult<u32> {
+        read_u32_property(format!("{}{}", self.chip.path(), "/charge_full").as_str())
+    }
+
+    fn get_charge_now_capacity(&self) -> GaugeResult<u32> {
+        read_u32_property(format!("{}{}", self.chip.path(), "/charge_now").as_str())
     }
 
     fn get_cycle_count(&self) -> GaugeResult<u32> {
         match self.chip {
             GaugeChip::BQ27z561(_) => {
                 read_u32_property(format!("{}{}", self.chip.path(), "/cycle_count").as_str())
+            }
+            _ => Err(GError::NotSupport),
+        }
+    }
+
+    fn get_time_to_full(&self) -> GaugeResult<u32> {
+        match self.chip {
+            GaugeChip::BQ27z561(_) => {
+                read_u32_property(format!("{}{}", self.chip.path(), "/time_to_full_now").as_str())
+            }
+            _ => Err(GError::NotSupport),
+        }
+    }
+
+    fn get_time_to_empty(&self) -> GaugeResult<u32> {
+        match self.chip {
+            GaugeChip::BQ27z561(_) => {
+                read_u32_property(format!("{}{}", self.chip.path(), "/time_to_empty_now").as_str())
             }
             _ => Err(GError::NotSupport),
         }
@@ -142,7 +172,19 @@ fn main() {
         Err(e) => println!("{}", e),
     };
 
-    if let Err(e) = g.get_current() {
+    if let Err(e) = g.get_voltage() {
         println!("{}", e);
+    }
+
+    println!(
+        "{}/{}",
+        g.get_charge_now_capacity().unwrap() / 1000,
+        g.get_full_charge_capacity().unwrap() / 1000
+    );
+
+    if g.get_current().unwrap() > 0 {
+        println!("Time left: {}", g.get_time_to_empty().unwrap());
+    } else {
+        println!("Time left: {}", g.get_time_to_full().unwrap());
     }
 }
