@@ -29,31 +29,27 @@ trait GaugeBase {
     }
 }
 
-struct BQ27621 {
-    name: &'static str,
-}
+struct BQ27621;
 
-struct BQ27z561 {
-    name: &'static str,
-}
+struct BQ27z561;
 
 impl GaugeBase for BQ27621 {
     fn new() -> BQ27621 {
-        BQ27621 { name: "bq27621" }
+        BQ27621
     }
 
     fn path(&self) -> &'static str {
-        self.name
+        "bq27621"
     }
 }
 
 impl GaugeBase for BQ27z561 {
     fn new() -> BQ27z561 {
-        BQ27z561 { name: "bq27z561" }
+        BQ27z561
     }
 
     fn path(&self) -> &'static str {
-        self.name
+        "bq27z561"
     }
 }
 
