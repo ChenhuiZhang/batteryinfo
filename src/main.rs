@@ -2,11 +2,12 @@ use anyhow::{anyhow, Context, Result};
 use std::fmt;
 use std::fs;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum GaugeChip {
     BQ27621,
     BQ27z561,
 }
+
 #[derive(Debug)]
 struct Gauge {
     chip: GaugeChip,
@@ -169,5 +170,44 @@ fn main() {
         println!("Time left: {}", g.get_time_to_empty().unwrap());
     } else {
         println!("Time left: {}", g.get_time_to_full().unwrap());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_init() {
+        let g = Gauge{..Default::default()};
+
+        assert_eq!(g.chip, GaugeChip::BQ27621);
+        assert_eq!(g.capacity, 0);
+        assert_eq!(g.current, 0);
+        assert_eq!(g.voltage, 0);
+        assert_eq!(g.remaining_capacity, 0);
+        assert_eq!(g.full_capacity, 0);
+
+    }
+
+    #[test]
+    fn test_capacity() {
+        let g = Gauge{..Default::default()};
+
+        assert_eq!(g.capacity, 0);
+
+        assert_eq!(g.get_capacity().unwrap(), 89);
+
+    }
+
+    #[test]
+    #[should_panic(expected = "Failed to read bq27621/voltage")]
+    fn test_voltage() {
+        let g = Gauge{..Default::default()};
+
+        assert_eq!(g.voltage, 0);
+
+        assert_eq!(g.get_voltage().unwrap(), 89);
+
     }
 }
