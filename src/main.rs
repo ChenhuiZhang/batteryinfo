@@ -29,6 +29,20 @@ trait GaugeBase {
     }
 }
 
+trait GaugeAdv: GaugeBase {
+    fn get_time_to_full(&self) -> Result<u32> {
+        read_u32_property(format!("{}{}", self.path(), "/time_to_full_now").as_str())
+    }
+
+    fn get_time_to_empty(&self) -> Result<u32> {
+        read_u32_property(format!("{}{}", self.path(), "/time_to_empty_now").as_str())
+    }
+
+    fn get_cycle_count(&self) -> Result<u32> {
+        read_u32_property(format!("{}{}", self.path(), "/cycle_count").as_str())
+    }
+}
+
 struct BQ27621;
 
 struct BQ27z561;
@@ -53,19 +67,7 @@ impl GaugeBase for BQ27z561 {
     }
 }
 
-impl BQ27z561 {
-    fn get_time_to_full(&self) -> Result<u32> {
-        read_u32_property(format!("{}{}", self.path(), "/time_to_full_now").as_str())
-    }
-
-    fn get_time_to_empty(&self) -> Result<u32> {
-        read_u32_property(format!("{}{}", self.path(), "/time_to_empty_now").as_str())
-    }
-
-    fn get_cycle_count(&self) -> Result<u32> {
-        read_u32_property(format!("{}{}", self.path(), "/cycle_count").as_str())
-    }
-}
+impl GaugeAdv for BQ27z561 {}
 
 fn read_i32_property(path: &str) -> Result<i32> {
     let s = fs::read_to_string(path).context(format!("Failed to read {}", path))?;
