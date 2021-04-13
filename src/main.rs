@@ -1,5 +1,8 @@
 use anyhow::{Context, Result};
 use std::fs;
+mod charger;
+
+use crate::charger::Charger;
 
 trait GaugeBase {
     // Static method signature; `Self` refers to the implementor type.
@@ -103,6 +106,14 @@ fn main() {
     if let Ok(v) = z.get_cycle_count() {
         println!("Cycle count is: {}", v)
     }
+
+    let c: charger::BQ24296 = Charger::new();
+
+    if let Err(e) = c.set_current(1280) {
+        println!("Error: {:?}", e);
+    }
+
+    c.enable_charger(false).unwrap();
 }
 
 #[cfg(test)]
