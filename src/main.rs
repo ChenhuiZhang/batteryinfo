@@ -3,14 +3,17 @@ use std::fs;
 mod charger;
 
 use crate::charger::Charger;
+use crate::charger::BQ24296;
 
-trait GaugeBase {
+trait Gauge {
     // Static method signature; `Self` refers to the implementor type.
     fn new() -> Self;
 
     // Instance method signatures; these will return a string.
     fn path(&self) -> &'static str;
+}
 
+trait GaugeBase: Gauge {
     fn get_capacity(&self) -> Result<u32> {
         read_u32_property(format!("{}{}", self.path(), "/capacity").as_str())
     }
@@ -32,7 +35,7 @@ trait GaugeBase {
     }
 }
 
-trait GaugeAdv: GaugeBase {
+trait GaugeAdv: Gauge {
     fn get_time_to_full(&self) -> Result<u32> {
         read_u32_property(format!("{}{}", self.path(), "/time_to_full_now").as_str())
     }
@@ -50,7 +53,7 @@ struct BQ27621;
 
 struct BQ27z561;
 
-impl GaugeBase for BQ27621 {
+impl Gauge for BQ27621 {
     fn new() -> BQ27621 {
         BQ27621
     }
@@ -60,7 +63,7 @@ impl GaugeBase for BQ27621 {
     }
 }
 
-impl GaugeBase for BQ27z561 {
+impl Gauge for BQ27z561 {
     fn new() -> BQ27z561 {
         BQ27z561
     }
@@ -70,6 +73,9 @@ impl GaugeBase for BQ27z561 {
     }
 }
 
+impl GaugeBase for BQ27621 {}
+
+impl GaugeBase for BQ27z561 {}
 impl GaugeAdv for BQ27z561 {}
 
 fn read_i32_property(path: &str) -> Result<i32> {
@@ -95,19 +101,19 @@ fn read_u32_property(path: &str) -> Result<u32> {
 }
 
 fn main() {
-    let g: BQ27621 = GaugeBase::new();
+    let g: BQ27621 = Gauge::new();
 
     if let Ok(v) = g.get_current() {
         println!("Current is: {}", v)
     }
 
-    let z: BQ27z561 = GaugeBase::new();
+    let z: BQ27z561 = Gauge::new();
 
     if let Ok(v) = z.get_cycle_count() {
         println!("Cycle count is: {}", v)
     }
 
-    let c: charger::BQ24296 = Charger::new();
+    let c = BQ24296::new();
 
     if let Err(e) = c.set_current(1280) {
         println!("Error: {:?}", e);
