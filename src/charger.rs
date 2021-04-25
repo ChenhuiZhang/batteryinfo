@@ -7,7 +7,7 @@ pub trait Charger {
     fn path(&self) -> &'static str;
 
     fn enable_charger(&self, en: bool) -> Result<()> {
-        let v= if en  { 1 } else { 0 };
+        let v = if en { 1 } else { 0 };
 
         write_u32_property(format!("{}{}", self.path(), "/f_chg_config").as_str(), v)
     }
