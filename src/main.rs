@@ -10,6 +10,32 @@ use crate::gauge::GaugeAdv;
 use crate::gauge::GaugeBase;
 use crate::gauge::BQ27621;
 
+fn logger<T>(b: T) -> T
+where
+    T: GaugeBase,
+{
+    let message = String::from("capacity: ");
+
+    if let Ok(cap) = b.get_capacity() {
+        message.push(format!("{: >3}", cap));
+    }
+    if let Ok(rcap) = b.get_charge_now_capacity() {
+        message.push("{: >4}", rcap)
+    }
+    if let Ok(fcc) = b.get_full_charge_capacity() {
+        message.push("{: >4}", fcc)
+    }
+    if let Ok(vol) = b.get_voltage() {
+        message.push("{: >4}", vol)
+    }
+
+    println!(
+        "capacity: {: >3} {: >4} {: >4} {: >4}", cap, rcap, fcc, vol
+    );
+
+    b
+}
+
 fn main() {
     let g: BQ27621 = Gauge::new();
 
@@ -30,6 +56,8 @@ fn main() {
     }
 
     c.enable_charger(false).unwrap();
+
+    logger(g);
 }
 
 #[cfg(test)]
