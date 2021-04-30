@@ -10,6 +10,21 @@ use crate::gauge::GaugeAdv;
 use crate::gauge::GaugeBase;
 use crate::gauge::BQ27621;
 
+fn logger<T>(b: T) -> T
+where
+    T: GaugeBase,
+{
+    println!(
+        "capacity: {: >3} {: >4} {: >4} {: >4}",
+        b.get_capacity().unwrap_or_default(),
+        b.get_charge_now_capacity().unwrap_or_default(),
+        b.get_full_charge_capacity().unwrap_or_default(),
+        b.get_voltage().unwrap_or_default()
+    );
+
+    b
+}
+
 fn main() {
     let g: BQ27621 = Gauge::new();
 
@@ -30,6 +45,8 @@ fn main() {
     }
 
     c.enable_charger(false).unwrap();
+
+    logger(g);
 }
 
 #[cfg(test)]
