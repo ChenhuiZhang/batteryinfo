@@ -1,14 +1,9 @@
 mod charger;
 mod gauge;
 
-use crate::charger::Charger;
-use crate::charger::BQ24296;
+use crate::charger::{Charger, BQ24296};
 
-use crate::gauge::BQ27z561;
-use crate::gauge::Gauge;
-use crate::gauge::GaugeAdv;
-use crate::gauge::GaugeBase;
-use crate::gauge::BQ27621;
+use crate::gauge::{BQ27z561, Gauge, GaugeAdv, GaugeBase, BQ27621};
 
 fn logger<T>(b: T) -> T
 where
